@@ -148,12 +148,13 @@ class P:
         P.ident()
         if P.sym == "(":
             P.next()
-            with P.zero_or_one():
+            if P.sym == ")":
+                P.next()
+            else:
                 P.expression()
                 while P.sym == ",":
                     P.consume(",")
                     P.expression()
-            P.consume(")")
 
     @staticmethod
     def if_statement():
@@ -161,7 +162,7 @@ class P:
         P.relop()
         P.consume("then")
         P.stat_sequence()
-        with P.zero_or_one():
+        if P.sym == "e":
             P.consume("else")
             P.stat_sequence()
         P.consume("fi")
