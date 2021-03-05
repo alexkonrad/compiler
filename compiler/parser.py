@@ -119,9 +119,10 @@ class Parser:
     def term() -> Result:
         x = Parser.factor()
         while Parser.sym in ("*", "/"):
+            op = OpCode.from_symbol(Parser.sym)
             Parser.next()
             y = Parser.factor()
-            RegisterMachine.compute(OpCode.MUL, x, y)
+            RegisterMachine.compute(op, x, y)
         return x
 
 
@@ -129,9 +130,10 @@ class Parser:
     def expression() -> Result:
         x = Parser.term()
         while Parser.sym in ("+", "-"):
+            op = OpCode.from_symbol(Parser.sym)
             Parser.next()
             y = Parser.term()
-            RegisterMachine.compute(OpCode.ADD, x, y)
+            RegisterMachine.compute(op, x, y)
         return x
 
     @staticmethod

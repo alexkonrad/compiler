@@ -26,4 +26,5 @@ quotes are for literals
 class Parser():
 
     def e(self):
+        pass
 

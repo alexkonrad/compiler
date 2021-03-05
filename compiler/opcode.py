@@ -18,11 +18,24 @@ from enum import Enum, auto
 
 class OpCode(Enum):
   ADD = 0
+  SUB = 1
   MUL = 2
+  DIV = 3
   ADDI = 16
+  SUBI = 17
   MULI = 18
+  DIVI = 19
   LDW = 32
 
   @property
   def immediate(self):
     return OpCode(self.value + 16)
+
+  @staticmethod
+  def from_symbol(sym):
+    return {
+      "+": OpCode.ADD,
+      "-": OpCode.SUB,
+      "*": OpCode.MUL,
+      "/": OpCode.DIV
+    }[sym]

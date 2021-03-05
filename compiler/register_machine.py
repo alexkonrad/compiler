@@ -10,15 +10,22 @@ class RegisterMachine:
     if x.kind is Kind.CONSTANT and y.kind is Kind.CONSTANT:
       if op is OpCode.ADD:
         x.val += y.val
+      elif op is OpCode.SUB:
+        x.val -= y.val
       elif op is OpCode.MUL:
         x.val *= y.val
+      elif op is OpCode.DIV:
+        x.val /= y.val
     else:
       RegisterMachine.load(x)
+      if x.r == 0:
+        x.r = RegTable.allocate_register()
+        OpCodeGen.put_f1(OpCode.ADD, x.r, 0, 0)
       if y.kind is Kind.CONSTANT:
-        OpCodeGen.put_f1(op.immediate, x.r, y.r, y.val)
+        OpCodeGen.put_f1(op.immediate, x.r, x.r, y.val)
       else:
         RegisterMachine.load(y)
-      OpCodeGen.put_f1(op, x.r, x.r, y.r)
+        OpCodeGen.put_f1(op, x.r, x.r, y.r)
       RegTable.deallocate_register(y.r)
 
   @staticmethod
