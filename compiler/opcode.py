@@ -16,16 +16,47 @@ from enum import Enum, auto
 #
 # AddI = OpCode2(Fmt.F1, 16)
 
+class SSAOpCode(Enum):
+  Add = auto()
+  Sub = auto()
+  Mul = auto()
+  Div = auto()
+  Const = auto()
+  Cmp = auto()
+
+  # Control instructions
+  Bra = auto()
+  Beq = auto()
+  Bne = auto()
+  Blt = auto()
+  Bge = auto()
+  Ble = auto()
+  Bgt = auto()
+
+  # IO instructions
+  Read = auto()
+  Write = auto()
+  WriteNL = auto()
+
+  @staticmethod
+  def from_relop(sym):
+    return {
+      "==": SSAOpCode.Bne,
+      "!=": SSAOpCode.Beq,
+      "<": SSAOpCode.Bge,
+      "<=": SSAOpCode.Bgt,
+      ">": SSAOpCode.Ble,
+      ">=": SSAOpCode.Blt
+    }[sym]
+
+
+
 class OpCode(Enum):
   ADD = 0
   SUB = 1
   MUL = 2
   DIV = 3
-  ADDI = 16
-  SUBI = 17
-  MULI = 18
-  DIVI = 19
-  LDW = 32
+  CONST = 99
 
   @property
   def immediate(self):

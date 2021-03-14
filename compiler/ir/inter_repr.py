@@ -1,37 +1,52 @@
 from __future__ import annotations
-from typing import List
-from dataclasses import dataclass, field
 
-from compiler.opcode import OpCode
+from compiler.ir.basic_block import BasicBlock
+from compiler.ir.instruction import Instruction
+from compiler.opcode import SSAOpCode
 
-class IntrRepr:
+
+class InterRepr:
   blks = []
+  pc: int = 0
 
   @staticmethod
-  def compute(op: OpCode, x: Result, y: Result):
-    if len(IntrRepr.blks) == 0:
-      IntrRepr.blks
-    # Create an instruction
-    instr = Instruction(op, x, y)
+  def add_const(x: int, y: int):
+    block = InterRepr.blks[-1]
+    pc = InterRepr.pc
+    instr = block.add_instr(pc, SSAOpCode.Const, x, y)
+    InterRepr.pc += 1
+    return instr
 
-    # Create an assignment
-    assgn = Assignment()
+  @staticmethod
+  def add_instr(op: SSAOpCode, x: Instruction = None, y: Instruction = None):
+    block = InterRepr.blks[-1]
+    pc = InterRepr.pc
+    instr = block.add_instr(pc, op, x, y)
+    InterRepr.pc += 1
+    return instr
 
-@dataclass
-class Instruction:
-  opcode: OpCode
-  x: Result
-  y: Result
+  @staticmethod
+  def assign(ident, instr: int):
+    block = InterRepr.blks[-1]
+    block.add_assgn(ident, instr)
 
-@dataclass
-class Assignment:
-  label: str
-  index: int
+  @staticmethod
+  def lookup(x):
+    block = InterRepr.blks[-1]
+    instr = block.lookup(x)
+    return instr
 
-@dataclass
-class BasicBlock:
-  pc: int
-  child: BasicBlock = None
-  parents: List[BasicBlock] = field(default_factory=list)
-  instructions: List[Instruction] = field(default_factory=list)
-  assignments: List[Assignment] = field(default_factory=list)
+  @staticmethod
+  def fetch_instr(pc):
+    for block in reversed(InterRepr.blks):
+      instr = block.fetch_instr(pc)
+      if instr:
+        return instr
+
+  @staticmethod
+  def add_block():
+    block = BasicBlock(InterRepr.pc)
+    InterRepr.blks.append(block)
+    return block
+
+InterRepr.add_block()

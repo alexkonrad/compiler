@@ -2,7 +2,8 @@ from compiler.errors import ParseError
 from compiler.result import Result, ConstantResult, VariableResult
 from compiler.symbol_table import SymbolTable
 from compiler.register_machine import RegisterMachine
-from compiler.opcode import OpCode
+from compiler.opcode import OpCode, SSAOpCode
+from compiler.ir.inter_repr import InterRepr
 
 class Parser:
     sym = str()
@@ -13,7 +14,9 @@ class Parser:
     def compile(program):
         Parser.txt = program
         Parser.next()
-        Parser.expression()
+        # Parser.stat_sequence()
+        # Parser.expression()
+        Parser.computation()
 
     @staticmethod
     def next():
@@ -22,6 +25,15 @@ class Parser:
             Parser.pc += 1
         except IndexError:
             print("Done.")
+        print(Parser.sym,end="")
+        if Parser.sym == "\n":
+            Parser.next()
+
+
+    @staticmethod
+    def indent():
+        while Parser.sym == " ":
+            Parser.consume(" ")
 
     @staticmethod
     def peek():
@@ -48,6 +60,11 @@ class Parser:
             Parser.next()
 
     @staticmethod
+    def space():
+        while Parser.sym.isspace():
+            Parser.next()
+
+    @staticmethod
     def isletter():
         return Parser.sym.isalpha()
 
@@ -63,9 +80,11 @@ class Parser:
             Parser.next()
         elif Parser.sym in ("<", ">"):
             Parser.next()
+        return chars
 
     @staticmethod
     def ident():
+        Parser.indent()
         if not Parser.isletter():
             Parser.error()
         id = Parser.sym
@@ -98,86 +117,127 @@ class Parser:
 
     @staticmethod
     def factor() -> Result:
+        try:
+            lookahead = Parser.sym + Parser.txt[Parser.pc:Parser.pc+3]
+            if lookahead == "call":
+                xi = Parser.func_call()
+                return xi
+        except IndexError:
+            pass
         if Parser.sym == '(':
             Parser.next()
-            x = Parser.expression()
+            xi = Parser.expression()
             Parser.consume(')')
         elif Parser.isdigit():
             number = Parser.number()
-            x = ConstantResult()
-            x.val = number
+            xi = InterRepr.add_const(SSAOpCode.Const, number, 0)
         elif Parser.isletter():
-            id = Parser.designator()
-            addr = SymbolTable.lookup(id)
-            x = VariableResult()
-            x.addr = addr
+            ident = Parser.designator()
+            xi = InterRepr.lookup(ident)
         else:
             Parser.error()
-        return x
+        return xi
 
     @staticmethod
-    def term() -> Result:
-        x = Parser.factor()
+    def term() -> int:
+        xi = Parser.factor()
         while Parser.sym in ("*", "/"):
             op = OpCode.from_symbol(Parser.sym)
             Parser.next()
-            y = Parser.factor()
-            RegisterMachine.compute(op, x, y)
-        return x
+            yi = Parser.factor()
+            xi = InterRepr.add_instr(op, xi, yi)
+        return xi
 
 
     @staticmethod
-    def expression() -> Result:
-        x = Parser.term()
+    def expression() -> int:
+        xi = Parser.term()
+        Parser.indent()
         while Parser.sym in ("+", "-"):
             op = OpCode.from_symbol(Parser.sym)
             Parser.next()
-            y = Parser.term()
-            RegisterMachine.compute(op, x, y)
-        return x
+            Parser.indent()
+            yi = Parser.term()
+            xi = InterRepr.add_instr(op, xi, yi)
+        return xi
 
     @staticmethod
     def relation():
-        Parser.expression()
-        Parser.relop()
-        Parser.expression()
+        xi = Parser.expression()
+        relop = Parser.relop()
+        branch_opcode = SSAOpCode.from_relop(relop)
+        yi = Parser.expression()
+        instr = InterRepr.add_instr(SSAOpCode.Cmp, xi, yi)
+        return instr, branch_opcode
 
     @staticmethod
     def assignment():
         Parser.consume("let")
-        Parser.designator()
+        ident = Parser.designator()
+        Parser.indent()
         Parser.consume("<-")
-        Parser.expression()
+        Parser.indent()
+        expr_instr = Parser.expression()
+        InterRepr.assign(ident, expr_instr)
 
     @staticmethod
     def func_call():
         Parser.consume("call")
-        Parser.ident()
-        if Parser.sym == "(":
+        ident = Parser.ident()
+        Parser.consume("(")
+        args = []
+        if Parser.sym == ")":
             Parser.next()
-            if Parser.sym == ")":
-                Parser.next()
-            else:
-                Parser.expression()
-                while Parser.sym == ",":
-                    Parser.consume(",")
-                    Parser.expression()
+        else:
+            args.append(Parser.expression())
+            while Parser.sym == ",":
+                Parser.consume(",")
+                args.append(Parser.expression())
+        if ident == "inputNum" and len(args) == 0:
+            instr = InterRepr.add_instr(SSAOpCode.Read)
+        elif ident == "outputNum" and len(args) == 1:
+            arg_instr = InterRepr.lookup(args[0])
+            instr = InterRepr.add_instr(SSAOpCode.Write, arg_instr)
+        else:
+            instr = None
+            # Add func_calls here
+        return instr
 
     @staticmethod
     def if_statement():
         Parser.consume("if")
-        Parser.relop()
+        Parser.indent()
+        rel_instr, branch_opcode = Parser.relation()
+        branch_instr = InterRepr.add_instr(branch_opcode, rel_instr, 0)
         Parser.consume("then")
+        parent_block = InterRepr.blks[-1]
+        if_block = InterRepr.add_block()
+        if_block.add_parent(parent_block)
         Parser.stat_sequence()
+        has_else_block = False
         if Parser.sym == "e":
+            has_else_block = True
             Parser.consume("else")
+            branch_back_instr = InterRepr.add_instr(SSAOpCode.Bra, 0)
+            else_block = InterRepr.add_block()
+            else_block.add_parent(parent_block)
+            branch_instr.y = InterRepr.pc + 1
             Parser.stat_sequence()
         Parser.consume("fi")
+        after_block = InterRepr.add_block()
+        after_block.add_parent(if_block)
+        if has_else_block:
+            after_block.add_parent(else_block)
+            branch_back_instr.y = InterRepr.pc + 1
+        else:
+            after_block.add_parent(parent_block)
+            branch_instr.y = InterRepr.pc + 1
+
 
     @staticmethod
     def while_statement():
         Parser.consume("while")
-        Parser.relop()
+        relop = Parser.relation()
         Parser.consume("do")
         Parser.stat_sequence()
         Parser.consume("od")
@@ -229,9 +289,11 @@ class Parser:
     @staticmethod
     def var_decl():
         Parser.type_decl()
+        Parser.indent()
         Parser.ident()
         while Parser.sym == ",":
             Parser.consume(",")
+            Parser.indent()
             Parser.ident()
         Parser.consume(";")
 
@@ -268,7 +330,7 @@ class Parser:
     def computation():
         Parser.consume("main")
         chars = Parser.sym + Parser.peek()
-        while chars not in ('vo', 'fu'):
+        while Parser.sym != "{" and chars not in ('vo', 'fu'):
             Parser.var_decl()
         while Parser.sym != "{":
             Parser.func_decl()
