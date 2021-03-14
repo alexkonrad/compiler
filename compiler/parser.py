@@ -33,7 +33,7 @@ class Parser:
     @staticmethod
     def indent():
         while Parser.sym == " ":
-            Parser.consume(" ")
+            Parser.next()
 
     @staticmethod
     def peek():
@@ -54,10 +54,12 @@ class Parser:
 
     @staticmethod
     def consume(chars):
+        Parser.indent()
         for char in chars:
             if Parser.sym != char:
                 Parser.error()
             Parser.next()
+        Parser.indent()
 
     @staticmethod
     def space():
@@ -79,12 +81,15 @@ class Parser:
             Parser.next()
             Parser.next()
         elif Parser.sym in ("<", ">"):
+            chars = Parser.sym
             Parser.next()
+        else:
+            Parser.error()
         return chars
 
     @staticmethod
     def ident():
-        Parser.indent()
+        # Parser.indent()
         if not Parser.isletter():
             Parser.error()
         id = Parser.sym
@@ -117,6 +122,7 @@ class Parser:
 
     @staticmethod
     def factor() -> Result:
+        Parser.indent()
         try:
             lookahead = Parser.sym + Parser.txt[Parser.pc:Parser.pc+3]
             if lookahead == "call":
@@ -130,7 +136,7 @@ class Parser:
             Parser.consume(')')
         elif Parser.isdigit():
             number = Parser.number()
-            xi = InterRepr.add_const(SSAOpCode.Const, number, 0)
+            xi = InterRepr.add_const(number, 0)
         elif Parser.isletter():
             ident = Parser.designator()
             xi = InterRepr.lookup(ident)
@@ -193,6 +199,7 @@ class Parser:
             while Parser.sym == ",":
                 Parser.consume(",")
                 args.append(Parser.expression())
+            Parser.consume(")")
         if ident == "inputNum" and len(args) == 0:
             instr = InterRepr.add_instr(SSAOpCode.Read)
         elif ident == "outputNum" and len(args) == 1:
@@ -206,7 +213,7 @@ class Parser:
     @staticmethod
     def if_statement():
         Parser.consume("if")
-        Parser.indent()
+        # Parser.indent()
         rel_instr, branch_opcode = Parser.relation()
         branch_instr = InterRepr.add_instr(branch_opcode, rel_instr, 0)
         Parser.consume("then")
@@ -289,11 +296,11 @@ class Parser:
     @staticmethod
     def var_decl():
         Parser.type_decl()
-        Parser.indent()
+        # Parser.indent()
         Parser.ident()
         while Parser.sym == ",":
             Parser.consume(",")
-            Parser.indent()
+            # Parser.indent()
             Parser.ident()
         Parser.consume(";")
 

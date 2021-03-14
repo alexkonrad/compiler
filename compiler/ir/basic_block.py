@@ -9,6 +9,7 @@ from compiler.ir.instruction import Instruction
 
 @dataclass
 class BasicBlock:
+  pc: int
   children: List[BasicBlock] = field(default_factory=list)
   parents: List[BasicBlock] = field(default_factory=list)
   instructions: List[Instruction] = field(default_factory=list)
