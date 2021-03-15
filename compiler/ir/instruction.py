@@ -9,3 +9,17 @@ class Instruction:
   opcode: SSAOpCode
   x: int
   y: int
+
+  def __repr__(self):
+    instr_str = f"{self.pc}: {self.opcode.name.lower()}"
+    if self.x:
+      if type(self.x) is Instruction:
+        instr_str += f" ({self.x.pc})"
+      elif type(self.x) is int:
+        instr_str += f" ({self.x})"
+    if self.y:
+      if type(self.y) is Instruction:
+        instr_str += f" ({self.y.pc})"
+      elif type(self.y) is int:
+        instr_str += f" ({self.y})"
+    return instr_str

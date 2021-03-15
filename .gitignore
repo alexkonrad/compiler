@@ -2,3 +2,5 @@
 *.pyc
 *.html
 .idea
+*.gv
+*.gv.pdf

@@ -5,11 +5,12 @@ from typing import List, Optional
 
 from compiler.ir.assignment import Assignment
 from compiler.ir.instruction import Instruction
+from compiler.opcode import SSAOpCode
 
 
 @dataclass
 class BasicBlock:
-  pc: int
+  idx: int
   children: List[BasicBlock] = field(default_factory=list)
   parents: List[BasicBlock] = field(default_factory=list)
   instructions: List[Instruction] = field(default_factory=list)
@@ -42,3 +43,9 @@ class BasicBlock:
     for instr in self.instructions:
       if instr.pc == pc:
         return instr
+
+  def empty_instr(self) -> Boolean:
+    if len(self.instructions) == 0:
+      return False
+    return self.instructions[-1].opcode is SSAOpCode.Empty
+

@@ -14,8 +14,6 @@ class Parser:
     def compile(program):
         Parser.txt = program
         Parser.next()
-        # Parser.stat_sequence()
-        # Parser.expression()
         Parser.computation()
 
     @staticmethod
@@ -180,9 +178,9 @@ class Parser:
     def assignment():
         Parser.consume("let")
         ident = Parser.designator()
-        Parser.indent()
+        # Parser.indent()
         Parser.consume("<-")
-        Parser.indent()
+        # Parser.indent()
         expr_instr = Parser.expression()
         InterRepr.assign(ident, expr_instr)
 
@@ -215,7 +213,7 @@ class Parser:
         Parser.consume("if")
         # Parser.indent()
         rel_instr, branch_opcode = Parser.relation()
-        branch_instr = InterRepr.add_instr(branch_opcode, rel_instr, 0)
+        parent_branch_instr = InterRepr.add_instr(branch_opcode, rel_instr, 0)
         Parser.consume("then")
         parent_block = InterRepr.blks[-1]
         if_block = InterRepr.add_block()
@@ -225,20 +223,20 @@ class Parser:
         if Parser.sym == "e":
             has_else_block = True
             Parser.consume("else")
-            branch_back_instr = InterRepr.add_instr(SSAOpCode.Bra, 0)
+            if_branch_instr = InterRepr.add_instr(SSAOpCode.Bra, 0)
             else_block = InterRepr.add_block()
             else_block.add_parent(parent_block)
-            branch_instr.y = InterRepr.pc + 1
+            parent_branch_instr.y = else_block.instructions[-1]
             Parser.stat_sequence()
         Parser.consume("fi")
         after_block = InterRepr.add_block()
         after_block.add_parent(if_block)
         if has_else_block:
             after_block.add_parent(else_block)
-            branch_back_instr.y = InterRepr.pc + 1
+            if_branch_instr.y = after_block.instructions[-1]
         else:
             after_block.add_parent(parent_block)
-            branch_instr.y = InterRepr.pc + 1
+            parent_branch_instr.y = after_block.instructions[-1]
 
 
     @staticmethod

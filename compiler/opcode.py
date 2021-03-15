@@ -24,6 +24,9 @@ class SSAOpCode(Enum):
   Const = auto()
   Cmp = auto()
 
+  # Empty
+  Empty = auto()
+
   # Control instructions
   Bra = auto()
   Beq = auto()

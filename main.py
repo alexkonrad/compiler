@@ -1,6 +1,8 @@
 import argparse
 
 from compiler.parser import Parser
+from compiler.graph import Graph
+from compiler.ir.inter_repr import InterRepr
 from compiler.symbol_table import SymbolTable
 from compiler.opcode_generator import OpCodeGenerator
 # from dlx import DLX
@@ -12,6 +14,8 @@ if __name__ == '__main__':
     with open(args.file) as f:
         source = f.read()
     Parser.compile(source)
+    g = Graph()
+    g.render()
     # Parser.compile("let x <- 0")
     # Parser.compile("1+2*(3+4)")
     # SymbolTable.symbol_table["a"] = 3

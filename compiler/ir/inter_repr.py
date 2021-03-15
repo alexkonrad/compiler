@@ -7,7 +7,7 @@ from compiler.opcode import SSAOpCode
 
 class InterRepr:
   blks = []
-  pc: int = 0
+  pc: int = 1
 
   @staticmethod
   def add_const(x: int, y: int):
@@ -20,6 +20,9 @@ class InterRepr:
   @staticmethod
   def add_instr(op: SSAOpCode, x: Instruction = None, y: Instruction = None):
     block = InterRepr.blks[-1]
+    if block.empty_instr():
+      block.instructions.pop()
+      InterRepr.pc -= 1
     pc = InterRepr.pc
     instr = block.add_instr(pc, op, x, y)
     InterRepr.pc += 1
@@ -45,8 +48,17 @@ class InterRepr:
 
   @staticmethod
   def add_block():
-    block = BasicBlock(InterRepr.pc)
+    block = BasicBlock(len(InterRepr.blks)+1)
     InterRepr.blks.append(block)
+    InterRepr.add_instr(SSAOpCode.Empty)
     return block
+
+  @staticmethod
+  def cfgraph():
+    return f"""
+      digraph G {{
+        
+      }}
+    """
 
 InterRepr.add_block()
