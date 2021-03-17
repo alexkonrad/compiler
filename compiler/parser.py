@@ -200,8 +200,8 @@ class Parser:
         if ident == "inputNum" and len(args) == 0:
             instr = InterRepr.add_instr(SSAOpCode.Read)
         elif ident == "outputNum" and len(args) == 1:
-            arg_instr = InterRepr.lookup(args[0])
-            instr = InterRepr.add_instr(SSAOpCode.Write, arg_instr)
+            # arg_instr = InterRepr.lookup(args[0])
+            instr = InterRepr.add_instr(SSAOpCode.Write, args[0])
         else:
             instr = None
             # Add func_calls here

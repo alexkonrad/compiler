@@ -35,22 +35,21 @@ class InterRepr:
   @staticmethod
   def assign(ident, instr: int):
     block = InterRepr.blks[-1]
-    phi_instr = InterRepr.lookup(ident)
+    old_instr = InterRepr.lookup(ident)
     block.add_assgn(ident, instr)
     for join_blk in reversed(InterRepr.join_blks):
-      for join_instr in join_blk.instructions:
-        is_empty = join_instr.opcode is SSAOpCode.Empty
-        is_phi = join_instr.opcode is SSAOpCode.Phi
-        should_edit_phi = is_phi and (phi_instr is join_instr.x or phi_instr is join_instr.y)
-        if is_empty or should_edit_phi:
-          join_instr.opcode = SSAOpCode.Phi
-          join_instr.x = instr
-          join_instr.y = phi_instr
-          break
+      phi_instr = join_blk.local_lookup(ident)
+      if phi_instr:
+        if phi_instr.x == old_instr:
+          phi_instr.x = instr
+        elif phi_instr.y == old_instr:
+          phi_instr.y = instr
       else:
         pc = InterRepr.pc
-        instr = join_blk.add_instr(pc, SSAOpCode.Phi, instr, phi_instr)
+        instr = join_blk.add_instr(pc, SSAOpCode.Phi, instr, old_instr)
+        join_blk.add_assgn(ident, instr)
         InterRepr.pc += 1
+
 
   @staticmethod
   def lookup(x):

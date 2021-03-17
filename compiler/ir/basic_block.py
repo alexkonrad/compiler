@@ -20,6 +20,11 @@ class BasicBlock:
     parent.children.append(self)
     self.parents.append(parent)
 
+  def local_lookup(self, ident):
+    for assignment in self.assignments:
+      if assignment.label == ident:
+        return assignment.index
+
   def lookup(self, ident):
     for assignment in self.assignments:
       if assignment.label == ident:
