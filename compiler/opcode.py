@@ -36,6 +36,9 @@ class SSAOpCode(Enum):
   Ble = auto()
   Bgt = auto()
 
+  # Phi function
+  Phi = auto()
+
   # IO instructions
   Read = auto()
   Write = auto()

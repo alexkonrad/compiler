@@ -134,7 +134,7 @@ class Parser:
             Parser.consume(')')
         elif Parser.isdigit():
             number = Parser.number()
-            xi = InterRepr.add_const(number, 0)
+            xi = InterRepr.add_const(number)
         elif Parser.isletter():
             ident = Parser.designator()
             xi = InterRepr.lookup(ident)
@@ -178,11 +178,10 @@ class Parser:
     def assignment():
         Parser.consume("let")
         ident = Parser.designator()
-        # Parser.indent()
         Parser.consume("<-")
-        # Parser.indent()
         expr_instr = Parser.expression()
         InterRepr.assign(ident, expr_instr)
+
 
     @staticmethod
     def func_call():
@@ -211,32 +210,29 @@ class Parser:
     @staticmethod
     def if_statement():
         Parser.consume("if")
-        # Parser.indent()
+        ancst_blk = InterRepr.blks[-1]
+        join_blk = InterRepr.add_join_block()
         rel_instr, branch_opcode = Parser.relation()
-        parent_branch_instr = InterRepr.add_instr(branch_opcode, rel_instr, 0)
+        InterRepr.add_instr(branch_opcode, rel_instr, join_blk.instructions[0])
+        InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
         Parser.consume("then")
-        parent_block = InterRepr.blks[-1]
-        if_block = InterRepr.add_block()
-        if_block.add_parent(parent_block)
         Parser.stat_sequence()
-        has_else_block = False
+
+        # Parse else block if there is one
         if Parser.sym == "e":
-            has_else_block = True
+
+            InterRepr.add_instr(SSAOpCode.Bra, join_blk.instructions[0])
+            else_blk = InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
+            ancst_blk.instructions[-1].y = else_blk.instructions[0]
+
             Parser.consume("else")
-            if_branch_instr = InterRepr.add_instr(SSAOpCode.Bra, 0)
-            else_block = InterRepr.add_block()
-            else_block.add_parent(parent_block)
-            parent_branch_instr.y = else_block.instructions[-1]
             Parser.stat_sequence()
-        Parser.consume("fi")
-        after_block = InterRepr.add_block()
-        after_block.add_parent(if_block)
-        if has_else_block:
-            after_block.add_parent(else_block)
-            if_branch_instr.y = after_block.instructions[-1]
+
+        # If there is no else block, attach join block to ancestor block
         else:
-            after_block.add_parent(parent_block)
-            parent_branch_instr.y = after_block.instructions[-1]
+            join_blk.add_parent(ancst_blk)
+        Parser.consume("fi")
+        InterRepr.attach_join_block(join_blk)
 
 
     @staticmethod

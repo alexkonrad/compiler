@@ -21,20 +21,22 @@ class BasicBlock:
     self.parents.append(parent)
 
   def lookup(self, ident):
-    for assignment in reversed(self.assignments):
+    for assignment in self.assignments:
       if assignment.label == ident:
         return assignment.index
-    # for parent in self.parents:
-    #   val = parent.get_assignment(ident)
-    #   if val:
-    #     return val
+    for parent in self.parents:
+      val = parent.lookup(ident)
+      if val != 0:
+        return val
     return 0
 
   def add_assgn(self, ident, index):
     assgn = Assignment(ident, index)
+    self.assignments = [a for a in self.assignments if a.label != assgn.label]
     self.assignments.append(assgn)
+    return assgn
 
-  def add_instr(self, pc, op, a, b):
+  def add_instr(self, pc, op, a=None, b=None):
     instr = Instruction(pc, op, a, b)
     self.instructions.append(instr)
     return instr
@@ -44,7 +46,7 @@ class BasicBlock:
       if instr.pc == pc:
         return instr
 
-  def empty_instr(self) -> Boolean:
+  def empty_instr(self) -> bool:
     if len(self.instructions) == 0:
       return False
     return self.instructions[-1].opcode is SSAOpCode.Empty
