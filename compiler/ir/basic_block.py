@@ -49,7 +49,7 @@ class BasicBlock:
     self.assignments.append(assgn)
     return assgn
 
-  def add_instr(self, pc, op, a=None, b=None):
+  def add_instr(self, pc, op, a=None, b=None, add_phi=False):
     if self.empty_instr():
       instr = self.instructions[0]
       instr.pc = pc
@@ -58,8 +58,19 @@ class BasicBlock:
       instr.y = b
     else:
       instr = Instruction(pc, op, a, b)
-      self.instructions.append(instr)
+      if instr.is_phi():
+        self.instructions.insert(self.phi_index(), instr)
+      else:
+        self.instructions.append(instr)
     return instr
+
+  def phi_index(self):
+    idx = 0
+    for i in range(len(self.instructions)):
+      if self.instructions[i].opcode is not SSAOpCode.Phi:
+        break
+      idx += 1
+    return idx
 
   def fetch_instr(self, pc) -> Optional[Instruction]:
     for instr in self.instructions:

@@ -30,3 +30,6 @@ class Instruction:
     elif SSAOpCode.is_branch(self.opcode):
       return self.y is dest
     return False
+
+  def is_phi(self):
+    return self.opcode is SSAOpCode.Phi

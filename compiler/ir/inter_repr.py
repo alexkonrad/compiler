@@ -42,7 +42,7 @@ class InterRepr:
           phi_instr.y = instr
       else:
         pc = InterRepr.pc
-        instr = join_blk.add_instr(pc, SSAOpCode.Phi, instr, old_instr)
+        instr = join_blk.add_instr(pc, SSAOpCode.Phi, instr, old_instr, add_phi=True)
         join_blk.add_assgn(ident, instr)
         InterRepr.pc += 1
 
