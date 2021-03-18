@@ -23,15 +23,9 @@ class InterRepr:
   @staticmethod
   def add_instr(op: SSAOpCode, x: Instruction = None, y: Instruction = None):
     blk = InterRepr.active_block
-    if blk.empty_instr():
-      instr = blk.instructions[0]
-      instr.opcode = op
-      instr.x = x
-      instr.y = y
-    else:
-      pc = InterRepr.pc
-      instr = blk.add_instr(pc, op, x, y)
-      InterRepr.pc += 1
+    pc = InterRepr.pc
+    instr = blk.add_instr(pc, op, x, y)
+    InterRepr.pc += 1
     return instr
 
   @staticmethod

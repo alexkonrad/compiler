@@ -246,7 +246,7 @@ class Parser:
         Parser.consume("while")
         ancst_blk = InterRepr.active_block
         cond_blk = InterRepr.add_block(parents=[ancst_blk])
-        loop_blk = InterRepr.add_block(parents=[cond_blk])
+        loop_blk = InterRepr.add_block(parents=[cond_blk], children=[cond_blk])
         cont_blk = InterRepr.add_block(parents=[cond_blk])
         InterRepr.active_block = cond_blk
         xi, rel_op, yi = Parser.relation()

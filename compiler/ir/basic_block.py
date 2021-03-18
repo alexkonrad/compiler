@@ -50,8 +50,15 @@ class BasicBlock:
     return assgn
 
   def add_instr(self, pc, op, a=None, b=None):
-    instr = Instruction(pc, op, a, b)
-    self.instructions.append(instr)
+    if self.empty_instr():
+      instr = self.instructions[0]
+      instr.pc = pc
+      instr.opcode = op
+      instr.x = a
+      instr.y = b
+    else:
+      instr = Instruction(pc, op, a, b)
+      self.instructions.append(instr)
     return instr
 
   def fetch_instr(self, pc) -> Optional[Instruction]:

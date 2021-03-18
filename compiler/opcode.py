@@ -55,6 +55,19 @@ class SSAOpCode(Enum):
       ">=": SSAOpCode.Blt
     }[sym]
 
+  @staticmethod
+  def is_branch(op):
+    return op in {
+      SSAOpCode.Bra,
+      SSAOpCode.Beq,
+      SSAOpCode.Bne,
+      SSAOpCode.Blt,
+      SSAOpCode.Bge,
+      SSAOpCode.Ble,
+      SSAOpCode.Bgt,
+    }
+
+
 
 
 class OpCode(Enum):

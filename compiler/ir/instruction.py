@@ -23,3 +23,10 @@ class Instruction:
     elif self.y is not None:
       instr_str += f" #{self.y}"
     return instr_str
+
+  def branches_to(self, dest):
+    if self.opcode is SSAOpCode.Bra:
+      return self.x is dest
+    elif SSAOpCode.is_branch(self.opcode):
+      return self.y is dest
+    return False
