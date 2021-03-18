@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -31,31 +32,48 @@ class BasicBlock:
   def local_lookup(self, ident):
     for assignment in self.assignments:
       if assignment.label == ident:
-        return assignment.index
+        return assignment.instr
 
   def lookup(self, ident):
     for assignment in self.assignments:
       if assignment.label == ident:
-        return assignment.index
+        return assignment.instr
     for parent in self.parents:
       val = parent.lookup(ident)
       if val != 0:
         return val
     return 0
 
-  def add_assgn(self, ident, index):
-    assgn = Assignment(ident, index)
+  def add_assgn(self, ident, instr):
+    assgn = Assignment(ident, instr)
     self.assignments = [a for a in self.assignments if a.label != assgn.label]
     self.assignments.append(assgn)
+    if not instr.is_phi():
+      return assgn
+    self.push_forward_assgn(assgn)
+
     return assgn
 
-  def add_instr(self, pc, op, a=None, b=None, add_phi=False):
+  def push_forward_assgn(self, assgn: Assignment):
+    for instr in self.instructions:
+      if instr.is_phi():
+        continue
+      if isinstance(instr.x, Instruction):
+        x_needs_replace = instr.x.label == assgn.label
+        if x_needs_replace:
+          instr.x = copy(assgn.instr)
+      if isinstance(instr.y, Instruction):
+        y_needs_replace = instr.y.label == assgn.label
+        if y_needs_replace:
+          instr.y = copy(assgn.instr)
+
+  def add_instr(self, pc, op, a=None, b=None):
     if self.empty_instr():
       instr = self.instructions[0]
       instr.pc = pc
       instr.opcode = op
-      instr.x = a
-      instr.y = b
+      instr.x = copy(a)
+      instr.y = copy(b)
     else:
       instr = Instruction(pc, op, a, b)
       if instr.is_phi():

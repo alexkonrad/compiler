@@ -201,7 +201,6 @@ class Parser:
         if ident == "inputNum" and len(args) == 0:
             instr = InterRepr.add_instr(SSAOpCode.Read)
         elif ident == "outputNum" and len(args) == 1:
-            # arg_instr = InterRepr.lookup(args[0])
             instr = InterRepr.add_instr(SSAOpCode.Write, args[0])
         else:
             instr = None
@@ -259,7 +258,7 @@ class Parser:
         Parser.consume("od")
         InterRepr.join_blks.pop()
         InterRepr.add_instr(SSAOpCode.Bra, cond_blk.entry_point)
-        InterRepr.active_blk = cont_blk
+        InterRepr.active_block = cont_blk
 
     @staticmethod
     def return_statement():

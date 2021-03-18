@@ -9,6 +9,7 @@ class Instruction:
   opcode: SSAOpCode
   x: int
   y: int
+  label: str = None
 
   def __repr__(self):
     instr_str = f"{self.pc}: {self.opcode.name.lower()}"
@@ -33,3 +34,6 @@ class Instruction:
 
   def is_phi(self):
     return self.opcode is SSAOpCode.Phi
+
+  def is_const(self):
+    return self.opcode is SSAOpCode.Const

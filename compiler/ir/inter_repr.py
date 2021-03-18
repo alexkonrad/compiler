@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import copy
 
 from compiler.ir.basic_block import BasicBlock
 from compiler.ir.instruction import Instruction
@@ -42,7 +43,7 @@ class InterRepr:
           phi_instr.y = instr
       else:
         pc = InterRepr.pc
-        instr = join_blk.add_instr(pc, SSAOpCode.Phi, instr, old_instr, add_phi=True)
+        instr = join_blk.add_instr(pc, SSAOpCode.Phi, instr, old_instr)
         join_blk.add_assgn(ident, instr)
         InterRepr.pc += 1
 
@@ -50,6 +51,9 @@ class InterRepr:
   def lookup(x):
     block = InterRepr.active_block
     instr = block.lookup(x)
+    if instr:
+      instr = copy(instr)
+      instr.label = x
     return instr
 
   @staticmethod
