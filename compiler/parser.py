@@ -145,9 +145,11 @@ class Parser:
     @staticmethod
     def term() -> int:
         xi = Parser.factor()
+        Parser.indent()
         while Parser.sym in ("*", "/"):
             op = OpCode.from_symbol(Parser.sym)
             Parser.next()
+            Parser.indent()
             yi = Parser.factor()
             xi = InterRepr.add_instr(op, xi, yi)
         return xi
