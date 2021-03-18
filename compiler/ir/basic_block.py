@@ -16,6 +16,14 @@ class BasicBlock:
   instructions: List[Instruction] = field(default_factory=list)
   assignments: List[Assignment] = field(default_factory=list)
 
+  @property
+  def entry_point(self):
+    return self.instructions[0]
+
+  @property
+  def exit_point(self):
+    return self.instructions[-1]
+
   def add_parent(self, parent: BasicBlock):
     parent.children.append(self)
     self.parents.append(parent)

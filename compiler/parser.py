@@ -171,10 +171,9 @@ class Parser:
     def relation():
         xi = Parser.expression()
         relop = Parser.relop()
-        branch_opcode = SSAOpCode.from_relop(relop)
         yi = Parser.expression()
-        instr = InterRepr.add_instr(SSAOpCode.Cmp, xi, yi)
-        return instr, branch_opcode
+        branch_opcode = SSAOpCode.from_relop(relop)
+        return xi, branch_opcode, yi
 
     @staticmethod
     def assignment():
@@ -215,8 +214,9 @@ class Parser:
         ancst_blk = InterRepr.active_block
         join_blk = InterRepr.add_block()
         InterRepr.join_blks.append(join_blk)
-        rel_instr, branch_opcode = Parser.relation()
-        InterRepr.add_instr(branch_opcode, rel_instr, join_blk.instructions[0])
+        xi, relop, yi = Parser.relation()
+        rel_instr = InterRepr.add_instr(SSAOpCode.Cmp, xi, yi)
+        InterRepr.add_instr(relop, rel_instr, join_blk.entry_point)
         if_blk = InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
         InterRepr.active_block = if_blk
         Parser.consume("then")
@@ -225,10 +225,10 @@ class Parser:
         # Parse else block if there is one
         if Parser.sym == "e":
 
-            InterRepr.add_instr(SSAOpCode.Bra, join_blk.instructions[0])
+            InterRepr.add_instr(SSAOpCode.Bra, join_blk.entry_point)
             else_blk = InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
             InterRepr.active_block = else_blk
-            ancst_blk.instructions[-1].y = else_blk.instructions[0]
+            ancst_blk.exit_point.y = else_blk.entry_point
 
             Parser.consume("else")
             Parser.stat_sequence()
@@ -249,15 +249,16 @@ class Parser:
         loop_blk = InterRepr.add_block(parents=[cond_blk])
         cont_blk = InterRepr.add_block(parents=[cond_blk])
         InterRepr.active_block = cond_blk
-        rel_instr, branch_opcode = Parser.relation()
-        InterRepr.add_instr(branch_opcode, rel_instr, cont_blk.instructions[0])
+        xi, rel_op, yi = Parser.relation()
+        rel_instr = InterRepr.add_instr(SSAOpCode.Cmp, xi, yi)
+        InterRepr.add_instr(rel_op, rel_instr, cont_blk.entry_point)
         InterRepr.active_block = loop_blk
         InterRepr.join_blks.append(cond_blk)
         Parser.consume("do")
         Parser.stat_sequence()
         Parser.consume("od")
         InterRepr.join_blks.pop()
-        InterRepr.add_instr(SSAOpCode.Bra, cond_blk.instructions[0])
+        InterRepr.add_instr(SSAOpCode.Bra, cond_blk.entry_point)
         InterRepr.active_blk = cont_blk
 
     @staticmethod
