@@ -6,13 +6,15 @@ from compiler.opcode import SSAOpCode
 
 
 class InterRepr:
-  blks = []
+  active_block: BasicBlock = None
+  root_block: BasicBlock = None
+  num_blks: int = 1
   join_blks = []
   pc: int = 1
 
   @staticmethod
   def add_const(x: int):
-    block = InterRepr.blks[-1]
+    block = InterRepr.active_block
     pc = InterRepr.pc
     instr = block.add_instr(pc, SSAOpCode.Const, x)
     InterRepr.pc += 1
@@ -20,7 +22,7 @@ class InterRepr:
 
   @staticmethod
   def add_instr(op: SSAOpCode, x: Instruction = None, y: Instruction = None):
-    blk = InterRepr.blks[-1]
+    blk = InterRepr.active_block
     if blk.empty_instr():
       instr = blk.instructions[0]
       instr.opcode = op
@@ -34,7 +36,7 @@ class InterRepr:
 
   @staticmethod
   def assign(ident, instr: int):
-    block = InterRepr.blks[-1]
+    block = InterRepr.active_block
     old_instr = InterRepr.lookup(ident)
     block.add_assgn(ident, instr)
     for join_blk in reversed(InterRepr.join_blks):
@@ -50,35 +52,23 @@ class InterRepr:
         join_blk.add_assgn(ident, instr)
         InterRepr.pc += 1
 
-
   @staticmethod
   def lookup(x):
-    block = InterRepr.blks[-1]
+    block = InterRepr.active_block
     instr = block.lookup(x)
     return instr
 
   @staticmethod
-  def fetch_instr(pc):
-    for block in reversed(InterRepr.blks):
-      instr = block.fetch_instr(pc)
-      if instr:
-        return instr
-
-  @staticmethod
-  def add_block(parents=None, children=None, join_block=False):
+  def add_block(parents=None, children=None):
     if parents is None:
       parents = []
     if children is None:
       children = []
 
-    blk = BasicBlock(len(InterRepr.blks)+1)
+    blk = BasicBlock(InterRepr.num_blks)
     blk.add_instr(InterRepr.pc, SSAOpCode.Empty)
     InterRepr.pc += 1
-
-    if not join_block:
-      InterRepr.blks.append(blk)
-    else:
-      InterRepr.join_blks.append(blk)
+    InterRepr.num_blks += 1
 
     for parent_blk in parents:
       blk.add_parent(parent_blk)
@@ -87,15 +77,7 @@ class InterRepr:
 
     return blk
 
-  @staticmethod
-  def add_join_block(parents=None, children=None):
-    return InterRepr.add_block(parents, children, join_block=True)
-
-  @staticmethod
-  def attach_join_block(blk: BasicBlock):
-    InterRepr.join_blks.pop()
-    blk.idx = len(InterRepr.blks) + 1
-    InterRepr.blks.append(blk)
-
 
 blk = InterRepr.add_block()
+InterRepr.active_block = blk
+InterRepr.root_block = blk

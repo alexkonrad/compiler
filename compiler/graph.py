@@ -12,25 +12,23 @@ from compiler.ir.instruction import Instruction
 @dataclass
 class Graph:
   filename: str = "out"
-  num_nodes: int = 0
 
   def render(self):
     self.s = Digraph('Control Flow Graph',
       filename=f"{self.filename}.gv",
       node_attr={'shape': 'record'})
 
-    for block in InterRepr.blks:
-      self.add_block(block)
-
-    for block in InterRepr.blks:
-      for child in block.children:
-        self.add_edge(block, child)
+    self.render_blk(InterRepr.root_block)
 
     self.s.view()
 
-  def add_block(self, block: BasicBlock):
-    self.num_nodes += 1
+  def render_blk(self, block: BasicBlock):
+    self.add_block(block)
+    for child in block.children:
+      self.render_blk(child)
+      self.add_edge(block, child)
 
+  def add_block(self, block: BasicBlock):
     instructions = self.add_instructions(block.instructions)
     self.s.node(f"BB{block.idx}",
                 f"BB{block.idx} | {instructions}")

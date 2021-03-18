@@ -212,11 +212,13 @@ class Parser:
     @staticmethod
     def if_statement():
         Parser.consume("if")
-        ancst_blk = InterRepr.blks[-1]
-        join_blk = InterRepr.add_join_block()
+        ancst_blk = InterRepr.active_block
+        join_blk = InterRepr.add_block()
+        InterRepr.join_blks.append(join_blk)
         rel_instr, branch_opcode = Parser.relation()
         InterRepr.add_instr(branch_opcode, rel_instr, join_blk.instructions[0])
-        InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
+        if_blk = InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
+        InterRepr.active_block = if_blk
         Parser.consume("then")
         Parser.stat_sequence()
 
@@ -225,6 +227,7 @@ class Parser:
 
             InterRepr.add_instr(SSAOpCode.Bra, join_blk.instructions[0])
             else_blk = InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
+            InterRepr.active_block = else_blk
             ancst_blk.instructions[-1].y = else_blk.instructions[0]
 
             Parser.consume("else")
@@ -234,16 +237,28 @@ class Parser:
         else:
             join_blk.add_parent(ancst_blk)
         Parser.consume("fi")
-        InterRepr.attach_join_block(join_blk)
+        InterRepr.join_blks.pop()
+        InterRepr.active_block = join_blk
 
 
     @staticmethod
     def while_statement():
         Parser.consume("while")
-        relop = Parser.relation()
+        ancst_blk = InterRepr.active_block
+        cond_blk = InterRepr.add_block(parents=[ancst_blk])
+        loop_blk = InterRepr.add_block(parents=[cond_blk])
+        cont_blk = InterRepr.add_block(parents=[cond_blk])
+        InterRepr.active_block = cond_blk
+        rel_instr, branch_opcode = Parser.relation()
+        InterRepr.add_instr(branch_opcode, rel_instr, cont_blk.instructions[0])
+        InterRepr.active_block = loop_blk
+        InterRepr.join_blks.append(cond_blk)
         Parser.consume("do")
         Parser.stat_sequence()
         Parser.consume("od")
+        InterRepr.join_blks.pop()
+        InterRepr.add_instr(SSAOpCode.Bra, cond_blk.instructions[0])
+        InterRepr.active_blk = cont_blk
 
     @staticmethod
     def return_statement():
