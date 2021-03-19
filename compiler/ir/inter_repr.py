@@ -9,6 +9,7 @@ from compiler.opcode import SSAOpCode
 class InterRepr:
   active_block: BasicBlock = None
   root_block: BasicBlock = None
+  blks = []
   num_blks: int = 1
   join_blks = []
   pc: int = 1
@@ -72,7 +73,7 @@ class InterRepr:
       blk.add_parent(parent_blk)
     for child_blk in children:
       child_blk.add_parent(blk)
-
+    InterRepr.blks.append(blk)
     return blk
 
 

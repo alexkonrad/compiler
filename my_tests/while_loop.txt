@@ -1,7 +1,7 @@
 main
 var a, b;
 {
-    let a <- call inputNum();
+    let a <- call InputNum();
     let b <- a;
     while a < 100 do
         let b <- a + 1;

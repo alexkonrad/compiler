@@ -16,10 +16,18 @@ class BasicBlock:
   parents: List[BasicBlock] = field(default_factory=list)
   instructions: List[Instruction] = field(default_factory=list)
   assignments: List[Assignment] = field(default_factory=list)
+  branch_to: BasicBlock = None
+  flow_to: BasicBlock = None
 
   @property
   def entry_point(self):
     return self.instructions[0]
+
+  @property
+  def entry_point_no_phi(self):
+    for instr in self.instructions:
+      if instr.opcode is not SSAOpCode.Phi:
+        return instr
 
   @property
   def exit_point(self):
@@ -99,4 +107,15 @@ class BasicBlock:
     if len(self.instructions) == 0:
       return False
     return self.instructions[-1].opcode is SSAOpCode.Empty
+
+
+  def branches_to(self, dest: BasicBlock):
+    return self.exit_point.branches_to(dest.entry_point_no_phi)
+
+  def flows_to(self, dest: BasicBlock):
+    pc1 = self.exit_point.pc
+    if not dest.entry_point_no_phi: return False
+    pc2 = dest.entry_point_no_phi.pc
+    return pc1 + 1 == pc2
+
 

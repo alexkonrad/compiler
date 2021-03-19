@@ -198,10 +198,12 @@ class Parser:
                 Parser.consume(",")
                 args.append(Parser.expression())
             Parser.consume(")")
-        if ident == "inputNum" and len(args) == 0:
+        if ident == "InputNum" and len(args) == 0:
             instr = InterRepr.add_instr(SSAOpCode.Read)
-        elif ident == "outputNum" and len(args) == 1:
+        elif ident == "OutputNum" and len(args) == 1:
             instr = InterRepr.add_instr(SSAOpCode.Write, args[0])
+        elif ident == "OutputNewline" and len(args) == 0:
+            instr = InterRepr.add_instr(SSAOpCode.Write, "\n")
         else:
             instr = None
             # Add func_calls here
@@ -217,6 +219,7 @@ class Parser:
         rel_instr = InterRepr.add_instr(SSAOpCode.Cmp, xi, yi)
         InterRepr.add_instr(relop, rel_instr, join_blk.entry_point)
         if_blk = InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
+        ancst_blk.flow_to = if_blk
         InterRepr.active_block = if_blk
         Parser.consume("then")
         Parser.stat_sequence()
@@ -224,19 +227,25 @@ class Parser:
         # Parse else block if there is one
         if Parser.sym == "e":
 
+            if_blk.branch_to = join_blk
             InterRepr.add_instr(SSAOpCode.Bra, join_blk.entry_point)
             else_blk = InterRepr.add_block(parents=[ancst_blk], children=[join_blk])
+            if_blk.flow_to = else_blk
             InterRepr.active_block = else_blk
             ancst_blk.exit_point.y = else_blk.entry_point
-
+            ancst_blk.branch_to = else_blk
             Parser.consume("else")
             Parser.stat_sequence()
 
         # If there is no else block, attach join block to ancestor block
         else:
+            if_blk.flow_to = join_blk
+            ancst_blk.branch_to = join_blk
             join_blk.add_parent(ancst_blk)
         Parser.consume("fi")
         InterRepr.join_blks.pop()
+        if len(InterRepr.join_blks) > 0:
+            join_blk.flow_to = InterRepr.join_blks[-1]
         InterRepr.active_block = join_blk
 
 
@@ -245,20 +254,26 @@ class Parser:
         Parser.consume("while")
         ancst_blk = InterRepr.active_block
         cond_blk = InterRepr.add_block(parents=[ancst_blk])
-        loop_blk = InterRepr.add_block(parents=[cond_blk], children=[cond_blk])
-        cont_blk = InterRepr.add_block(parents=[cond_blk])
         InterRepr.active_block = cond_blk
+        ancst_blk.flow_to = cond_blk
+        loop_blk = InterRepr.add_block(parents=[cond_blk], children=[cond_blk])
+        follow_blk = InterRepr.add_block(parents=[cond_blk])
         xi, rel_op, yi = Parser.relation()
         rel_instr = InterRepr.add_instr(SSAOpCode.Cmp, xi, yi)
-        InterRepr.add_instr(rel_op, rel_instr, cont_blk.entry_point)
+        InterRepr.add_instr(rel_op, rel_instr, follow_blk.entry_point)
+        cond_blk.branch_to = follow_blk
+        cond_blk.flow_to = loop_blk
         InterRepr.active_block = loop_blk
         InterRepr.join_blks.append(cond_blk)
         Parser.consume("do")
         Parser.stat_sequence()
         Parser.consume("od")
         InterRepr.join_blks.pop()
+        if len(InterRepr.join_blks) > 0:
+            follow_blk.branch_to = InterRepr.join_blks[-1]
         InterRepr.add_instr(SSAOpCode.Bra, cond_blk.entry_point)
-        InterRepr.active_block = cont_blk
+        loop_blk.branch_to = cond_blk
+        InterRepr.active_block = follow_blk
 
     @staticmethod
     def return_statement():

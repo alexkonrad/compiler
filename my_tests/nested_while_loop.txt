@@ -1,7 +1,7 @@
 main
 var a, b;
 {
-    let a <- call inputNum();
+    let a <- call InputNum();
     let b <- a;
     while a < 100 do
         let b <- a + 1;
@@ -10,5 +10,5 @@ var a, b;
             let b <- b * 2
         od
     od;
-    call outputNum(a)
+    call OutputNum(a)
 }.
